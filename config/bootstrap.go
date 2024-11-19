@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"github.com/spf13/viper"
 	"os"
 	"time"
@@ -17,7 +16,6 @@ func init() {
 	vp := viper.New()
 
 	configFileStream, err := configs.ReadFile("app." + env + ".yaml")
-	fmt.Println(configFileStream)
 	if err != nil {
 		panic(err)
 	}

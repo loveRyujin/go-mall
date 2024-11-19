@@ -9,8 +9,6 @@ import (
 	"os"
 )
 
-var logger *zap.Logger
-
 func init() {
 	encoderCfg := zap.NewProductionEncoderConfig()
 	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -26,8 +24,10 @@ func init() {
 		cores = append(cores, zapcore.NewCore(encoder, fileWriteSyncer, zapcore.DebugLevel))
 	}
 	core := zapcore.NewTee(cores...)
-	logger = zap.New(core)
+	_logger = zap.New(core)
 }
+
+var _logger *zap.Logger
 
 func getFileLogWriter() zapcore.WriteSyncer {
 	lumberJackLogger := &lumberjack.Logger{
