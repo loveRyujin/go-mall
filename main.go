@@ -10,7 +10,7 @@ import (
 
 func main() {
 	r := gin.New()
-	r.Use(middleware.StartTrace())
+	r.Use(middleware.StartTrace(), middleware.LogAccess())
 	r.GET("ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -29,5 +29,10 @@ func main() {
 			"status": "ok",
 		})
 	})
-	r.Run(":8080")
+	r.POST("/access-log-test", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
+	_ = r.Run(":8080")
 }
