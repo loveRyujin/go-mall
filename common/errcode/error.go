@@ -1,12 +1,106 @@
 package errcode
 
-var (
-	Success            = newError(0, "success")
-	ErrServer          = newError(10000000, "服务器内部错误")
-	ErrParams          = newError(10000001, "参数错误，请检查")
-	ErrNotFound        = newError(10000002, "资源不存在")
-	ErrPanic           = newError(10000003, "系统开小差了，请稍后再试")
-	ErrToken           = newError(10000004, "token无效")
-	ErrForbidden       = newError(10000005, "未授权")
-	ErrTooManyRequests = newError(10000006, "请求过多")
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"path"
+	"runtime"
 )
+
+type AppError struct {
+	code     int    `json:"code"`
+	message  string `json:"message"`
+	cause    error  `json:"cause"`
+	occurred string `json:"occurred"`
+}
+
+func (e *AppError) Code() int {
+	return e.code
+}
+
+func (e *AppError) Message() string {
+	return e.message
+}
+
+func (e *AppError) Error() string {
+	if e == nil {
+		return ""
+	}
+	formattedErr := struct {
+		Code     int    `json:"code"`
+		Message  string `json:"message"`
+		Cause    string `json:"cause"`
+		Occurred string `json:"occurred"`
+	}{
+		Code:     e.Code(),
+		Message:  e.Message(),
+		Occurred: e.occurred,
+	}
+	if e.cause != nil {
+		formattedErr.Cause = e.cause.Error()
+	}
+	jsonData, _ := json.Marshal(formattedErr)
+	return string(jsonData)
+}
+
+func (e *AppError) String() string {
+	return e.Error()
+}
+
+func (e *AppError) HttpStatusCode() int {
+	switch e.Code() {
+	case Success.Code():
+		return http.StatusOK
+	case ErrServer.Code(), ErrPanic.Code():
+		return http.StatusInternalServerError
+	case ErrParams.Code():
+		return http.StatusBadRequest
+	case ErrNotFound.Code():
+		return http.StatusNotFound
+	case ErrTooManyRequests.Code():
+		return http.StatusTooManyRequests
+	case ErrToken.Code():
+		return http.StatusUnauthorized
+	case ErrForbidden.Code():
+		return http.StatusForbidden
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func (e *AppError) WithCause(err error) error {
+	e.cause = err
+	e.occurred = getAppErrOccurred()
+	return e
+}
+
+func newError(code int, message string) *AppError {
+	return &AppError{
+		code:    code,
+		message: message,
+	}
+}
+
+func Wrap(message string, err error) *AppError {
+	if err == nil {
+		return nil
+	}
+	return &AppError{
+		code:     -1,
+		message:  message,
+		cause:    err,
+		occurred: getAppErrOccurred(),
+	}
+}
+
+func getAppErrOccurred() string {
+	pc, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return ""
+	}
+	file = path.Base(file)
+	funcName := runtime.FuncForPC(pc).Name()
+	triggerInfo := fmt.Sprintf("func: %s, file: %s, line: %d", funcName, file, line)
+	return triggerInfo
+}
