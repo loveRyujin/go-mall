@@ -7,7 +7,14 @@ app:
     max_age: 60
 database:
   type: mysql
-  dsn: reserved
-  maxopenconn: 100
-  maxidleconn: 10
-  maxlifetime: 300
+  master:
+    dsn: root:superpass@tcp(localhost:3306)/go_mall?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai
+    maxopenconn: 100
+    maxidleconn: 10
+    maxlifetime: 300000000000
+  slave:
+    dsn: root:superpass@tcp(localhost:3306)/go_mall?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai
+    maxopenconn: 100
+    maxidleconn: 10
+    maxlifetime: 300000000000
+

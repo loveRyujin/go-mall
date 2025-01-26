@@ -1,0 +1,36 @@
+version: '2'
+services:
+  # Database
+  database:
+    platform: linux/x86_64
+    image: mysql:5.7
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      - "MYSQL_DATABASE=go_mall"
+      - "MYSQL_USER=user"
+      - "MYSQL_PASSWORD=secret"
+      - "MYSQL_ROOT_PASSWORD=superpass"
+      - "TZ=Asia/Shanghai"
+    ports:
+      - "3306:3306"
+
+  # Redis
+  redis:
+    platform: linux/x86_64
+    image: redis
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      #      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_ARGS="--requirepass 123456"
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - '6379:6379'
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+
+volumes:
+  dbdata:
+    driver: local
+  redis_data:
+    driver: local

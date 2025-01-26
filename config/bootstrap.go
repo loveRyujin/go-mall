@@ -5,7 +5,6 @@ import (
 	"embed"
 	"github.com/spf13/viper"
 	"os"
-	"time"
 )
 
 //go:embed *.yaml
@@ -33,5 +32,4 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	Database.MaxLifeTime *= time.Second
 }
