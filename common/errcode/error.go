@@ -69,7 +69,7 @@ func (e *AppError) HttpStatusCode() int {
 	}
 }
 
-func (e *AppError) WithCause(err error) error {
+func (e *AppError) WithCause(err error) *AppError {
 	e.cause = err
 	e.occurred = getAppErrOccurred()
 	return e

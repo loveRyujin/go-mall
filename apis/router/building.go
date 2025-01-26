@@ -12,4 +12,5 @@ func registerBuildingRoutes(rg *gin.RouterGroup) {
 	g.GET("logger-test", controller.TestLogger)
 	g.POST("access-log-test", controller.TestAccessLog)
 	g.GET("response-test", controller.TestResponse)
+	g.GET("gorm-db-logger-test", controller.TestGormDbLogger)
 }
