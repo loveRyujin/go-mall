@@ -2,11 +2,12 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/loveRyujin/go-mall/apis/request"
 	"github.com/loveRyujin/go-mall/common/app"
 	"github.com/loveRyujin/go-mall/common/errcode"
 	"github.com/loveRyujin/go-mall/common/logger"
 	"github.com/loveRyujin/go-mall/config"
-	"github.com/loveRyujin/go-mall/dal/dao"
+	"github.com/loveRyujin/go-mall/logic/appservice"
 )
 
 func TestPing(ctx *gin.Context) {
@@ -46,11 +47,28 @@ func TestResponse(ctx *gin.Context) {
 }
 
 func TestGormDbLogger(ctx *gin.Context) {
-	demo := dao.NewDemoDao(ctx)
-	records, err := demo.GetAllDemos()
+	service := appservice.NewDemoAppService(ctx)
+	ids, err := service.GetDemoIds()
 	if err != nil {
 		app.NewResponse(ctx).Error(errcode.ErrServer.WithCause(err))
 		return
 	}
-	app.NewResponse(ctx).Success(records)
+	app.NewResponse(ctx).Success(ids)
+}
+
+func TestCreateDemoOrder(ctx *gin.Context) {
+	orderRequest := new(request.DemoOrderCreate)
+	if err := ctx.ShouldBindJSON(orderRequest); err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	// 验证用户信息 Token 然后把UserID赋值上去 这里测试就直接赋值了
+	orderRequest.UserId = 123453453
+	service := appservice.NewDemoAppService(ctx)
+	reply, err := service.CreateDemoOrder(orderRequest)
+	if err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(ctx).Success(reply)
 }
