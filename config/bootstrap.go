@@ -32,4 +32,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	err = vp.UnmarshalKey("redis", &Redis)
+	if err != nil {
+		panic(err)
+	}
 }
