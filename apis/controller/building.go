@@ -7,6 +7,7 @@ import (
 	"github.com/loveRyujin/go-mall/common/errcode"
 	"github.com/loveRyujin/go-mall/common/logger"
 	"github.com/loveRyujin/go-mall/config"
+	"github.com/loveRyujin/go-mall/lib"
 	"github.com/loveRyujin/go-mall/logic/appservice"
 )
 
@@ -71,4 +72,22 @@ func TestCreateDemoOrder(ctx *gin.Context) {
 		return
 	}
 	app.NewResponse(ctx).Success(reply)
+}
+
+func TestHttpToolGet(ctx *gin.Context) {
+	detail, err := lib.NewWhoisLib(ctx).GetHostIpDetail()
+	if err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(ctx).Success(detail)
+}
+
+func TestHttpToolPost(ctx *gin.Context) {
+	demoOrder, err := lib.NewDemoLib(ctx).TestPostCreateOrder()
+	if err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(ctx).Success(demoOrder)
 }
