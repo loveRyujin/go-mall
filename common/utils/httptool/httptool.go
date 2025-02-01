@@ -61,12 +61,14 @@ func Request(method, url string, options ...Option) (httpStatusCode int, respBod
 	}()
 
 	dur := time.Since(start).Milliseconds()
-	if dur >= 3000 {
-		// 记录慢请求日志
-		log.Warn("HTTP_REQUEST_SLOW_LOG", "method", method, "url", url, "body", requestOption.data, "reply", respBody, "err", err, "dur/ms", dur)
-	} else {
-		log.Debug("HTTP_REQUEST_DEBUG_LOG", "method", method, "url", url, "body", requestOption.data, "reply", respBody, "err", err, "dur/ms", dur)
-	}
+	defer func() {
+		if dur >= 3000 {
+			// 记录慢请求日志
+			log.Warn("HTTP_REQUEST_SLOW_LOG", "method", method, "url", url, "body", requestOption.data, "reply", respBody, "err", err, "dur/ms", dur)
+		} else {
+			log.Debug("HTTP_REQUEST_DEBUG_LOG", "method", method, "url", url, "body", string(requestOption.data), "reply", string(respBody), "err", err, "dur/ms", dur)
+		}
+	}()
 
 	httpStatusCode = resp.StatusCode
 	if httpStatusCode != http.StatusOK {

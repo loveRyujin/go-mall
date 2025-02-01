@@ -39,7 +39,7 @@ func (lib *DemoLib) TestPostCreateOrder() (*OrderCreateResult, error) {
 		return nil, err
 	}
 	httpCode, respBody, err := httptool.Post(lib.ctx, "http://localhost:10000/building/create-demo-order", jsonReq)
-	logger.New(lib.ctx).Info("create-demo-order api response ", "code", httpCode, "data", respBody, "err", err)
+	logger.New(lib.ctx).Info("create-demo-order api response ", "code", httpCode, "data", string(respBody), "err", err)
 	if err != nil {
 		return nil, err
 	}
