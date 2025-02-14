@@ -9,4 +9,5 @@ var (
 	ErrToken           = newError(10000004, "token无效")
 	ErrForbidden       = newError(10000005, "未授权")
 	ErrTooManyRequests = newError(10000006, "请求过多")
+	ErrUserInvalid     = newError(10000007, "用户无效")
 )

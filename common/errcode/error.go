@@ -54,7 +54,7 @@ func (e *AppError) HttpStatusCode() int {
 		return http.StatusOK
 	case ErrServer.Code(), ErrPanic.Code():
 		return http.StatusInternalServerError
-	case ErrParams.Code():
+	case ErrParams.Code(), ErrUserInvalid.Code():
 		return http.StatusBadRequest
 	case ErrNotFound.Code():
 		return http.StatusNotFound
@@ -70,9 +70,31 @@ func (e *AppError) HttpStatusCode() int {
 }
 
 func (e *AppError) WithCause(err error) *AppError {
-	e.cause = err
-	e.occurred = getAppErrOccurred()
-	return e
+	newErr := e.Clone()
+	newErr.cause = err
+	newErr.occurred = getAppErrOccurred()
+	return newErr
+}
+
+func (e *AppError) UnWrap() error {
+	return e.cause
+}
+
+func (e *AppError) Is(target error) bool {
+	t, ok := target.(*AppError)
+	if !ok {
+		return false
+	}
+	return e.code == t.code
+}
+
+func (e *AppError) Clone() *AppError {
+	return &AppError{
+		code:     e.code,
+		message:  e.message,
+		cause:    e.cause,
+		occurred: e.occurred,
+	}
 }
 
 func newError(code int, message string) *AppError {

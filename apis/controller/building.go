@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/loveRyujin/go-mall/apis/request"
 	"github.com/loveRyujin/go-mall/common/app"
@@ -90,4 +91,53 @@ func TestHttpToolPost(ctx *gin.Context) {
 		return
 	}
 	app.NewResponse(ctx).Success(demoOrder)
+}
+
+func TestMakeToken(ctx *gin.Context) {
+	userService := appservice.NewUserAppService(ctx)
+	token, err := userService.GenToken()
+	if err != nil {
+		if errors.Is(err, errcode.ErrUserInvalid) {
+			logger.New(ctx).Error("invalid user is unable to generate token", "err", err)
+			app.NewResponse(ctx).Error(errcode.ErrUserInvalid)
+		} else {
+			var appErr *errcode.AppError
+			if ok := errors.As(err, appErr); ok {
+				app.NewResponse(ctx).Error(appErr)
+			}
+		}
+		return
+	}
+	app.NewResponse(ctx).Success(token)
+}
+
+func TestRefreshToken(ctx *gin.Context) {
+	refreshToken := ctx.Query("refresh_token")
+	if refreshToken == "" {
+		app.NewResponse(ctx).Error(errcode.ErrParams)
+		return
+	}
+	userService := appservice.NewUserAppService(ctx)
+	token, err := userService.RefreshToken(refreshToken)
+	if err != nil {
+		if errors.Is(err, errcode.ErrTooManyRequests) {
+			logger.New(ctx).Error("too many requests", "err", err)
+			app.NewResponse(ctx).Error(errcode.ErrTooManyRequests)
+		} else {
+			var appErr *errcode.AppError
+			if ok := errors.As(err, appErr); ok {
+				app.NewResponse(ctx).Error(appErr)
+			}
+		}
+		return
+	}
+	app.NewResponse(ctx).Success(token)
+}
+
+func TestAuthToken(ctx *gin.Context) {
+	app.NewResponse(ctx).Success(gin.H{
+		"user_id":    ctx.GetInt64("userId"),
+		"session_id": ctx.GetString("sessionId"),
+	})
+	return
 }
