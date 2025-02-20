@@ -7,16 +7,47 @@ import (
 	"github.com/loveRyujin/go-mall/common/logger"
 	"github.com/loveRyujin/go-mall/common/utils"
 	"github.com/loveRyujin/go-mall/dal/cache"
+	"github.com/loveRyujin/go-mall/dal/dao"
 	"github.com/loveRyujin/go-mall/logic/do"
 	"time"
 )
 
 type UserDomainService struct {
-	ctx context.Context
+	ctx     context.Context
+	userDao *dao.UserDao
 }
 
 func NewUserDomainService(ctx context.Context) *UserDomainService {
-	return &UserDomainService{ctx: ctx}
+	return &UserDomainService{
+		ctx:     ctx,
+		userDao: dao.NewUserDao(ctx),
+	}
+}
+
+func (uds *UserDomainService) RegisterUser(userInfo *do.UserBaseInfo, password string) (*do.UserBaseInfo, error) {
+	user, err := uds.userDao.FetchUserByLoginName(userInfo.LoginName)
+	if err != nil {
+		err = errcode.Wrap("UserDomainServiceRegisterUserError", err)
+		return nil, err
+	}
+	if user.LoginName != userInfo.LoginName {
+		return nil, errcode.ErrUserNameOccupied
+	}
+	hashPassword, err := utils.BcryptPassword(password)
+	if err != nil {
+		err = errcode.Wrap("UserDomainServiceRegisterUserError", err)
+		return nil, err
+	}
+	user, err = uds.userDao.CreateUser(userInfo, hashPassword)
+	if err != nil {
+		err = errcode.Wrap("UserDomainServiceRegisterUserError", err)
+		return nil, err
+	}
+	if err = utils.CopyProperties(userInfo, user); err != nil {
+		err = errcode.Wrap("UserDomainServiceRegisterUserError", err)
+		return nil, err
+	}
+	return userInfo, nil
 }
 
 // GetUserBaseInfo 因为还没开发注册登录功能, 这里先Mock一个返回

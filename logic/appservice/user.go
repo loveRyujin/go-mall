@@ -2,9 +2,13 @@ package appservice
 
 import (
 	"context"
+	"errors"
 	"github.com/loveRyujin/go-mall/apis/reply"
+	"github.com/loveRyujin/go-mall/apis/request"
+	"github.com/loveRyujin/go-mall/common/errcode"
 	"github.com/loveRyujin/go-mall/common/logger"
 	"github.com/loveRyujin/go-mall/common/utils"
+	"github.com/loveRyujin/go-mall/logic/do"
 	"github.com/loveRyujin/go-mall/logic/domainservice"
 )
 
@@ -18,6 +22,26 @@ func NewUserAppService(ctx context.Context) *UserAppService {
 		ctx:              ctx,
 		usrDomainService: domainservice.NewUserDomainService(ctx),
 	}
+}
+
+func (uas *UserAppService) RegisterUser(registerInfo *request.UserRegister) error {
+	userInfo := new(do.UserBaseInfo)
+	if err := utils.CopyProperties(userInfo, registerInfo); err != nil {
+		return err
+	}
+	_, err := uas.usrDomainService.RegisterUser(userInfo, registerInfo.Password)
+	if err != nil {
+		if errors.Is(err, errcode.ErrUserNameOccupied) {
+			// 重名导致的注册不成功不额外处理
+			return err
+		}
+		// 此处可以发通知告知用户注册失败 | 记录日志，告警监控，提示有用户注册失败
+		logger.New(uas.ctx).Error("failed to register user, err: ", "error", err)
+		return err
+	}
+	// 此处可以写注册成功后的外围逻辑，比如注册成功后给用户发确认短信|邮件
+	// 如果产品的逻辑是注册成功后立即登录，此处紧跟登录的逻辑
+	return nil
 }
 
 func (uas *UserAppService) GenToken() (*reply.TokenReply, error) {
