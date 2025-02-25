@@ -126,6 +126,39 @@ func DeleteRefreshToken(ctx context.Context, refreshToken string) error {
 	return nil
 }
 
+// DeleteUserSessionOnPlatform 删除用户在特定平台下的session
+func DeleteUserSessionOnPlatform(ctx context.Context, userId int64, platform string) error {
+	key := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
+	return Redis().HDel(ctx, key, platform).Err()
+}
+
+// DeleteUserSessions 删除用户在所有平台下的session
+func DeleteUserSessions(ctx context.Context, userId int64) error {
+	key := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
+	return Redis().Del(ctx, key).Err()
+}
+
+// GetUserAllSessions 获取用户所有平台下的session，返回为map（平台->session）
+func GetUserAllSessions(ctx context.Context, userId int64) (map[string]*do.SessionInfo, error) {
+	key := fmt.Sprintf(enum.REDIS_KEY_USER_SESSION, userId)
+	result, err := Redis().HGetAll(ctx, key).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	sessions := make(map[string]*do.SessionInfo)
+	for platform, sessionData := range result {
+		session := new(do.SessionInfo)
+		if err := json.Unmarshal([]byte(sessionData), session); err != nil {
+			return nil, err
+		}
+		sessions[platform] = session
+	}
+	return sessions, nil
+}
+
 func LockTokenRefresh(ctx context.Context, refreshToken string) (bool, error) {
 	key := fmt.Sprintf(enum.REDISKEY_TOKEN_REFRESH_LOCK, refreshToken)
 	return Redis().SetNX(ctx, key, "locked", 10*time.Second).Result()

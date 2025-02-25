@@ -50,6 +50,53 @@ func (uds *UserDomainService) RegisterUser(userInfo *do.UserBaseInfo, password s
 	return userInfo, nil
 }
 
+func (uds *UserDomainService) LoginUser(loginName, password, platform string) (*do.TokenInfo, error) {
+	existedUser, err := uds.userDao.FetchUserByLoginName(loginName)
+	if err != nil {
+		err = errcode.Wrap("UserDomainServiceLoginUserError", err)
+		return nil, err
+	}
+	if existedUser.ID == 0 {
+		return nil, errcode.ErrUserNotRight
+	}
+	if !utils.BcryptCompare(existedUser.Password, password) {
+		return nil, errcode.ErrUserNotRight
+	}
+	tokenInfo, err := uds.GenAuthToken(existedUser.ID, platform, "")
+	if err != nil {
+		err = errcode.Wrap("UserDomainServiceLoginUserError", err)
+		return nil, err
+	}
+	return tokenInfo, nil
+}
+
+func (uds *UserDomainService) LogoutUser(userId int64, platform string) error {
+	log := logger.New(uds.ctx)
+	userSession, err := cache.GetUserPlatformSession(uds.ctx, userId, platform)
+	if err != nil {
+		log.Error("LogoutUserError", "err", err)
+		err = errcode.Wrap("UserDomainServiceLogoutUserError", err)
+		return err
+	}
+	if err = cache.DeleteAccessToken(uds.ctx, userSession.AccessToken); err != nil {
+		log.Error("LogoutUserError", "err", err)
+		err = errcode.Wrap("UserDomainServiceLogoutUserError", err)
+		return err
+	}
+	if err = cache.DeleteRefreshToken(uds.ctx, userSession.RefreshToken); err != nil {
+		log.Error("LogoutUserError", "err", err)
+		err = errcode.Wrap("UserDomainServiceLogoutUserError", err)
+		return err
+	}
+	// 删除用户对应平台的session
+	if err = cache.DeleteUserSessionOnPlatform(uds.ctx, userId, platform); err != nil {
+		log.Error("LogoutUserError", "err", err)
+		err = errcode.Wrap("UserDomainServiceLogoutUserError", err)
+		return err
+	}
+	return nil
+}
+
 // GetUserBaseInfo 因为还没开发注册登录功能, 这里先Mock一个返回
 func (uds *UserDomainService) GetUserBaseInfo(uid int64) *do.UserBaseInfo {
 	return &do.UserBaseInfo{

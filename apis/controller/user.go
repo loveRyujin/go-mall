@@ -36,3 +36,44 @@ func RegisterUser(ctx *gin.Context) {
 	app.NewResponse(ctx).SuccessOk()
 	return
 }
+
+func LoginUser(ctx *gin.Context) {
+	loginRequest := new(request.UserLogin)
+	if err := ctx.ShouldBindJSON(&loginRequest.Body); err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	if err := ctx.ShouldBindHeader(&loginRequest.Header); err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrParams.WithCause(err))
+		return
+	}
+	// 登录用户
+	userAppSvr := appservice.NewUserAppService(ctx)
+	token, err := userAppSvr.LoginUser(loginRequest)
+	if err != nil {
+		if errors.Is(err, errcode.ErrUserNotRight) {
+			app.NewResponse(ctx).Error(errcode.ErrUserNotRight)
+		} else if errors.Is(err, errcode.ErrUserInvalid) {
+			app.NewResponse(ctx).Error(errcode.ErrUserInvalid)
+		} else {
+			app.NewResponse(ctx).Error(errcode.ErrServer.WithCause(err))
+		}
+		logger.New(ctx).Error("login user error", "err", err)
+		return
+	}
+
+	app.NewResponse(ctx).Success(token)
+	return
+}
+
+func LogoutUser(ctx *gin.Context) {
+	userId := ctx.GetInt64("userId")
+	platform := ctx.GetString("platform")
+	userAppSvr := appservice.NewUserAppService(ctx)
+	if err := userAppSvr.LogoutUser(userId, platform); err != nil {
+		app.NewResponse(ctx).Error(errcode.ErrServer.WithCause(err))
+		return
+	}
+	app.NewResponse(ctx).SuccessOk()
+	return
+}

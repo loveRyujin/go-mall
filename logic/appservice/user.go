@@ -44,6 +44,24 @@ func (uas *UserAppService) RegisterUser(registerInfo *request.UserRegister) erro
 	return nil
 }
 
+func (uas *UserAppService) LoginUser(userLoginReq *request.UserLogin) (*reply.TokenReply, error) {
+	tokenInfo, err := uas.usrDomainService.LoginUser(userLoginReq.Body.LoginName, userLoginReq.Body.Password, userLoginReq.Header.Platform)
+	if err != nil {
+		return nil, err
+	}
+	tokenReply := new(reply.TokenReply)
+	if err = utils.CopyProperties(tokenReply, tokenInfo); err != nil {
+		return nil, err
+	}
+
+	// 执行用户登录成功后发送消息通知之类的外围辅助型逻辑
+	return tokenReply, nil
+}
+
+func (uas *UserAppService) LogoutUser(userId int64, platform string) error {
+	return uas.usrDomainService.LogoutUser(userId, platform)
+}
+
 func (uas *UserAppService) GenToken() (*reply.TokenReply, error) {
 	token, err := uas.usrDomainService.GenAuthToken(12345678, "h5", "")
 	if err != nil {
